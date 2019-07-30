@@ -1,0 +1,57 @@
+version: '2.3'
+services:
+  eureka-server:
+    image:  eurekaserver:latest
+    ports:
+      - 8761:8761
+  db:
+    image: mysql:latest
+    environment:
+      - MYSQL_ROOT_PASSWORD=mysql
+      - MYSQL_DATABASE=db_restful
+    ports:
+      - 3306:3306
+    healthcheck:
+      test: ["CMD", "mysqladmin" ,"ping", "-h", "192.168.99.100"]
+      timeout: 20s
+      retries: 10
+  service-a:
+    image: ejercicio02:latest
+    depends_on:
+      db:
+          condition: service_healthy
+    ports:
+      - 8090:8090
+    environment:
+      - DATABASE_HOST=db
+      - DATABASE_USER=root
+      - DATABASE_PASSWORD=mysql
+      - DATABASE_NAME=db_restful
+      - DATABASE_PORT=3306
+    links:
+      - eureka-server
+      - service-b
+  service-b:
+    image: ejecicio01maven:latest
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - 8080:8080
+    environment:
+      - DATABASE_HOST=db
+      - DATABASE_USER=root
+      - DATABASE_PASSWORD=mysql
+      - DATABASE_NAME=db_restful
+      - DATABASE_PORT=3306
+    links:
+      - eureka-server
+  zuul:
+    image: zuul:latest
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+        - 9090:9090
+    links:
+      - eureka-server
